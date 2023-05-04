@@ -1,0 +1,102 @@
+/* Manages the look and feel of activities, controls, and their environment to ensure proper display. */
+
+* { font-family: sans-serif; color: black; }
+
+body {
+	padding: 0px;
+	margin: 0px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin: 0px;
+	padding-top: 21.44px;
+	padding-bottom: 21.44px;
+}
+
+button {
+	background-color: white;
+	color: black;
+	border: 1px solid black;
+}
+
+#view-main {
+	width: 100vw;
+	height: calc(100vh - 50px);
+}
+
+.noactionbar {
+	height: 100vh !important;
+	margin: 0px !important;
+}
+
+.listitem {
+	height: 60px;
+	background-color: white;
+	color: black;
+	border: 1px solid black;
+	width: 100%;
+	margin: 0px;
+	display: flex;
+	padding-left: 20px;
+	align-items: center;
+	justify-content: left;
+}
+
+.activity {
+	width: 100%;
+	height: 100%;
+}
+
+.actionbar {
+	width: 100%;
+	height: 50px;
+	top: 0px;
+	padding: 0px;
+	margin: 0px;
+	border-bottom: 1px solid black;
+	background-color: darkgray !important;
+	position: fixed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.navbar {
+	width: 100%;
+	height: 50px;
+	padding: 0px;
+	margin: 0px;
+	border-top: 1px solid white;
+	background-color: black !important;
+	position: fixed;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: white !important;
+}
+
+.navbutton {
+	height: 100%;
+	width: 50px;
+	margin: 0px;
+	background-color: black;
+	color: white;
+	padding: 0px;
+	border: none;
+	font-weight: bold;
+}
+
+.cutekitten {
+	background: url(cat.jpg);
+	background-repeat: no-repeat;
+	background-size: cover;
+}
+
+.activity-content {
+	min-width: 100%;
+	min-height: calc(100% - 50px);
+	margin-top: 50px;
+	margin-bottom: 50px;
+	background-color: lightgray !important;
+}
