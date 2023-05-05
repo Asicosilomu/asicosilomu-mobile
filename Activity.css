@@ -16,6 +16,7 @@ h1, h2, h3, h4, h5, h6 {
 button {
 	background-color: white;
 	color: black;
+	padding: 10px;
 	border: 1px solid black;
 }
 
@@ -40,6 +41,16 @@ button {
 	padding-left: 20px;
 	align-items: center;
 	justify-content: left;
+}
+
+.shorter { width: 90% !important; height: unset !important; padding: 10px; };
+
+.EditText {
+	width: 10em;
+	white-space: pre-wrap;
+	background-color: white;
+	color: black;
+	border: 1px solid black;
 }
 
 .activity {
