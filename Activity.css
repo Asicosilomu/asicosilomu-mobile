@@ -43,7 +43,7 @@ button {
 	justify-content: left;
 }
 
-.shorter { width: 90% !important; height: unset !important; padding: 10px; };
+.shorter { width: 90% !important; height: unset !important; padding: 10px; }
 
 .EditText {
 	width: 10em;
