@@ -16,6 +16,12 @@ Apps:
 * App Installer
 * Asicosilomu Apps
 * Fullscreen
+* GitHub (links to here)
+
+Apps on Asicosilomu Apps:
+* Reset Welcome Message
+* Package Export
+* Testul la Istorie
 
 Live demo: https://asicosilomu.github.io/asicosilomu-mobile
 
