@@ -5,7 +5,8 @@ window.Activity = {};
 
 // System Information
 System.ProductName = "Asicosilomu Mobile";
-System.ProductVersion = "1.2";
+System.ProductVersion = "1.3";
+System.ProductCodename = "Cavicorn";
 
 window.addEventListener("DOMContentLoaded", (e) => {
 
@@ -164,7 +165,11 @@ System.Locale.Strings = {
 		"hackysideload_magic": "Do the magic",
 		"app_uninstall": "Uninstall",
 		"app_com.asicosilomu.apps": "Asicosilomu Apps",
-		"app_install": "Install"
+		"app_install": "Install",
+		"app_update": "Update",
+		"pkg_error_sys": "This package conflicts with an existing system package by the same name.",
+		"pkg_error_key": "This package cannot be updated due to a key mismatch.",
+		"pkg_error_parse": "There was a problem parsing the package."
 	},
 	"ro": {
 		"app_com.asicosilomu.notes": "Notițe",
@@ -194,13 +199,23 @@ System.Locale.Strings = {
 		"hackysideload_magic": "Fă magie",
 		"app_uninstall": "Dezinstalare",
 		"app_com.asicosilomu.apps": "Aplicații Asicosilomu",
-		"app_install": "Instalare"
+		"app_install": "Instalare",
+		"app_update": "Actualizare",
+		"pkg_error_sys": "Acest pachet este în conflict cu un pachet de sistem existent cu același nume.",
+		"pkg_error_key": "Acest pachet nu poate fi actualizat deoarece cheile de securitate nu se potrivesc.",
+		"pkg_error_parse": "A apărut o problemă la procesarea pachetului."
 	}
 };
 System.LaunchPackage("com.asicosilomu.providers.settings", "Core", {"Name": "UserLocale", "RequestType": "GET"}).then(function(e){System.Locale.Current = e; System.Locale.Strings.Current = System.Locale.Strings[System.Locale.Current];
 
 // Quick Localization Function
 function ql(e) { return System.Locale.Strings.Current[e]; };
+
+// User Localization
+System.Locale.CreateUserQL = function (strings) {
+	var cs = strings[System.Locale.Current];
+	return function(e) { return cs[e]; };
+}
 
 // Localize Settings Storage App
 System.Packages.Core["com.asicosilomu.providers.settings"].frn = ql("app_com.asicosilomu.providers.settings");
@@ -460,7 +475,7 @@ co = {
 							},
 							{
 								"name": ql("settings_sysver"),
-								"value": `${System.ProductName} ${System.ProductVersion}`
+								"value": `${System.ProductName} ${System.ProductVersion} "${System.ProductCodename}"`
 							}
 						];
 						for (var i = 0; i < properties.length; i++) {
@@ -575,19 +590,38 @@ co = {
 		"init": function() {
 			var c = document.createElement("div");
 			var appList = [
-				{"frn":"Reset Welcome Message","pkg":"com.asicosilomu.welreset","init":"return function(){localStorage.removeItem('welShown');alert('Done!','The welcome message will be shown on next boot.')}"},
-				{"pkg":"com.asicosilomu.istorie","frn":"Testul la Istorie","init":"return function(){var i = document.createElement('iframe');i.src='data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+DQo8aHRtbD4NCgk8aGVhZD4NCgkJPHRpdGxlPlRlc3R1bCBsYSBJc3RvcmllIC0gVGV4dCBBZHZlbnR1cmU8L3RpdGxlPg0KCQk8c3R5bGUgdHlwZT0idGV4dC9jc3MiPg0KCQkJKiB7IGZvbnQtZmFtaWx5OiBzYW5zLXNlcmlmOyBmb250LXNpemU6IDEuMWVtOyB9DQoJCQkNCgkJCWJvZHkgew0KCQkJCWJhY2tncm91bmQtY29sb3I6IGJsYWNrOw0KCQkJCWRpc3BsYXk6IGZsZXg7DQoJCQkJYWxpZ24taXRlbXM6IGNlbnRlcjsNCgkJCQlqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsNCgkJCQl3aWR0aDogMTAwdnc7DQoJCQkJaGVpZ2h0OiAxMDB2aDsNCgkJCQltYXJnaW46IDBweDsNCgkJCQljb2xvcjogd2hpdGU7DQoJCQl9DQoJCQkNCgkJCSNjb250YWluZXIgew0KCQkJCWJhY2tncm91bmQtY29sb3I6IHdoaXRlOw0KCQkJCWNvbG9yOiBibGFjayAhaW1wb3J0YW50Ow0KCQkJCXBhZGRpbmc6IDE1cHg7DQoJCQl9DQoJCQkNCgkJCSNidXR0b24tY29udGFpbmVyIHsNCgkJCQlkaXNwbGF5OiBmbGV4Ow0KCQkJCW1hcmdpbi10b3A6IDE1cHg7DQoJCQkJYWxpZ24taXRlbXM6IGNlbnRlcjsNCgkJCQlqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsNCgkJCX0NCgkJCQ0KCQkJYnV0dG9uIHsNCgkJCQltYXJnaW46IDVweDsNCgkJCX0NCgkJPC9zdHlsZT4NCgkJPHNjcmlwdCB0eXBlPSJ0ZXh0L2phdmFzY3JpcHQiPg0KCQl3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigiRE9NQ29udGVudExvYWRlZCIsIChlKSA9PiB7DQoJCQ0KCQkJLy8gVGVzdCBJc3RvcmllIEhhaGENCgkJCXZhciBjb250YWluZXIgPSBkb2N1bWVudC5ib2R5LnF1ZXJ5U2VsZWN0b3IoIiNjb250YWluZXIiKTsNCgkJCXZhciBwcm9tcHQgPSBjb250YWluZXIucXVlcnlTZWxlY3RvcigiI3Byb21wdCIpOw0KCQkJdmFyIGJ0bmNvbnQgPSBjb250YWluZXIucXVlcnlTZWxlY3RvcigiI2J1dHRvbi1jb250YWluZXIiKTsNCgkJCQ0KCQkJLy8gUG92ZXN0ZQ0KCQkJdmFyIHByb21wdHMgPSB7DQoJCQkJInRleHQiOiAiU8SDcHTEg23Dom5hIHZpaXRvYXJlIHZlaSBkYSB1biB0ZXN0IGxhIElzdG9yaWUuIEN1bSB0ZSBwcmVnxIN0ZciZdGk/IiwNCgkJCQkib3B0aW9ucyI6IFsNCgkJCQkJew0KCQkJCQkJInRleHQiOiAiRsSDIGNvcGl1yJtlIiwNCgkJCQkJCSJvdXRjb21lIjogew0KCQkJCQkJCSJ0ZXh0IjogIkFpIGbEg2N1dCBjb3BpdcibZWxlIMiZaSBsZS1haSBixINnYXQgbGEgYm96b25hci4gQSB2ZW5pdCB0aW1wdWwgdGVzdHVsdWkhIiwNCgkJCQkJCQkib3B0aW9ucyI6IFsNCgkJCQkJCQkJew0KCQkJCQkJCQkJInRleHQiOiAiTWVyZ2kgbGEgyJljb2FsxIMiLA0KCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJInRleHQiOiAiQWkgZGF0IHRlc3R1bCBkb2FyIGPEgyBkb21udWwgZGUgSXN0b3JpZSB0ZS1hIHByaW5zIGN1IGNvcGl1yJtlbGUuIEFpIHByaW1pdCBub3RhIDEuIFRlIHN1bsSDIG1hbWEgyJlpIHRlIMOubnRyZWFixIMgY2UgYWkgZsSDY3V0IGxhIMiZY29hbMSDLiIsDQoJCQkJCQkJCQkJIm9wdGlvbnMiOiBbDQoJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCSJ0ZXh0IjogIlRhY2kgZGluIGd1csSDIiwNCgkJCQkJCQkJCQkJCSJvdXRjb21lIjogew0KCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIkFpIHTEg2N1dCBkaW4gZ3VyxIMgaWFyIG1hbWEgbnUgYSBhZmxhdC4gQWkgc2PEg3BhdCEiLA0KCQkJCQkJCQkJCQkJCSJvcHRpb25zIjogW10NCgkJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQkJfSwNCgkJCQkJCQkJCQkJew0KCQkJCQkJCQkJCQkJInRleHQiOiAiU3B1bmUtaSBkZSB0ZXN0IiwNCgkJCQkJCQkJCQkJCSJvdXRjb21lIjogew0KCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIk1hbWEgdGUgw65udHJlYWLEgyBjZSBub3TEgyBhaSBsdWF0LiIsDQoJCQkJCQkJCQkJCQkJIm9wdGlvbnMiOiBbDQoJCQkJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIlNwdW5lLWkgY8SDIG51IHMtYXUgZGF0IMOubmPEgyByZXp1bHRhdGVsZSIsDQoJCQkJCQkJCQkJCQkJCQkib3V0Y29tZSI6IHsNCgkJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJNYW1hIGEgdWl0YXQgZXZlbnR1YWwgZGUgdGVzdCBpYXIgbm90YSB0YSBudSBhIGZvc3QgYWZsYXTEgy4gQnJhdm8hIg0KCQkJCQkJCQkJCQkJCQkJfQ0KCQkJCQkJCQkJCQkJCQl9LA0KCQkJCQkJCQkJCQkJCQl7DQoJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJTcHVuZS1pIGFkZXbEg3J1bCIsDQoJCQkJCQkJCQkJCQkJCQkib3V0Y29tZSI6IHsNCgkJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJNYW1hIHMtYSBzdXDEg3JhdCBmb2FydGUgdGFyZSDImWkgYSBhcnVuY2F0IGN1IG1hc2EgZGluIGJ1Y8SDdMSDcmllLiBQZXJlyJtpaSBzZW5zaWJpbGkgYWkgY2FzZWkgbnUgYXUgc3Vwb3J0YXQgZm9yyJthIGlhciB0b2F0xIMgY2FzYSBzLWEgZsSDY3V0IGJ1Y8SDyJtlbGUuIFRvyJtpIGHIm2kgcsSDbWFzIHBlIHN0csSDemkuIg0KCQkJCQkJCQkJCQkJCQkJfQ0KCQkJCQkJCQkJCQkJCQl9LA0KCQkJCQkJCQkJCQkJCQl7DQoJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJTcHVuZS1pIGPEgyBhaSBsdWF0IDEwIiwNCgkJCQkJCQkJCQkJCQkJCSJvdXRjb21lIjogew0KCQkJCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIk1hbWEgdGUgZmVsaWNpdMSDLCBkYXIgdG90dciZaSBudSB0ZSBjcmVkZS4gRWEgZXN0ZSBwZSBjYWxlIHPEgyDDrmwgdGVsZWZvbmV6ZSBwZSBkb21udWwgZGUgSXN0b3JpZSBwZW50cnUgYSBjb25maXJtYS4iLA0KCQkJCQkJCQkJCQkJCQkJCSJvcHRpb25zIjogWw0KCQkJCQkJCQkJCQkJCQkJCQl7DQoJCQkJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJMYXMtbyBzxIMgw65sIHRlbGVmb25lemUiLA0KCQkJCQkJCQkJCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJCQkJCQkJCQkJInRleHQiOiAiTWFtYSBsLWEgdGVsZWZvbmF0IHBlIGRvbW51bCBkZSBJc3RvcmllIGlhciBhY2VzdGEgaS1hIHNwdXMgYWRldsSDcnVsLiBWYSB0cmVidWkgc8SDIGZvbG9zZciZdGkgR05PTUUgcGVudHJ1IG8gbHVuxIMuIg0KCQkJCQkJCQkJCQkJCQkJCQkJfQ0KCQkJCQkJCQkJCQkJCQkJCQl9LA0KCQkJCQkJCQkJCQkJCQkJCQl7DQoJCQkJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJTcHVuZS1pIHPEgyBhyJl0ZXB0ZSBwdcibaW4iLA0KCQkJCQkJCQkJCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJCQkJCQkJCQkJInRleHQiOiAiTWFtYSBhyJl0ZWFwdMSDLiBDZSBmYWNpPyIsDQoJCQkJCQkJCQkJCQkJCQkJCQkJIm9wdGlvbnMiOiBbDQoJCQkJCQkJCQkJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIlNwdW5lLWkgYWRldsSDcnVsIiwNCgkJCQkJCQkJCQkJCQkJCQkJCQkJCSJvdXRjb21lIjogeyAidGV4dCI6ICJNYWkgYmluZSDDrmkgc3B1bmVhaSBkZSBsYSDDrm5jZXB1dC4gyJh0aWkgY2Ugc2Ugw65udMOibXBsxIMgYWN1bS4iIH0NCgkJCQkJCQkJCQkJCQkJCQkJCQkJfSwNCgkJCQkJCQkJCQkJCQkJCQkJCQkJew0KCQkJCQkJCQkJCQkJCQkJCQkJCQkJInRleHQiOiAiRMSDLWkgyJlwYWfEgyBsdWkgZG9tbnVsIGRlIElzdG9yaWUgc8SDIMOuaSBzcHVuxIMgY8SDIGFpIGx1YXQgMTAiLA0KCQkJCQkJCQkJCQkJCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJCQkJCQkJCQkJCQkJInRleHQiOiAiyJppLWFpIGdvbGl0IHB1yJljdWxpyJthIMiZaSBpLWFpIGRhdCBkb21udWx1aSBkZSBJc3RvcmllIDEwMCBkZSBsZWkgyJlwYWfEgy4gQWkgc2PEg3BhdCEiDQoJCQkJCQkJCQkJCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQkJCQkJCQkJCQldDQoJCQkJCQkJCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQkJCQkJCQldDQoJCQkJCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQkJCQldDQoJCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQldDQoJCQkJCQkJCQl9DQoJCQkJCQkJCX0NCgkJCQkJCQldDQoJCQkJCQl9DQoJCQkJCX0sDQoJCQkJCXsNCgkJCQkJCSJ0ZXh0IjogIsOObnZhyJvEgyIsDQoJCQkJCQkib3V0Y29tZSI6IHsNCgkJCQkJCQkidGV4dCI6ICJBaSBzdGF0IG8gemkgw65udHJlYWfEgyBzxIMgdG9jZciZdGkgY2VsZSA2IHBhZ2luaSBkZSBpbmZvcm1hyJtpaSBpbnV0aWxlLiBFyJl0aSBwcmVnxIN0aXQuIiwNCgkJCQkJCQkib3B0aW9ucyI6IFsNCgkJCQkJCQkJew0KCQkJCQkJCQkJInRleHQiOiAiTWVyZ2kgbGEgyJljb2FsxIMiLA0KCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJInRleHQiOiAiQWkgZGF0IHRlc3R1bCDImWkgYWkgbHVhdCBub3RhIDEwLiBDZSBmYWNpPyIsDQoJCQkJCQkJCQkJIm9wdGlvbnMiOiBbDQoJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCSJ0ZXh0IjogIlNwdW5lLWkgbWFtZWkiLA0KCQkJCQkJCQkJCQkJIm91dGNvbWUiOiB7ICJ0ZXh0IjogIk1hbWEgZXN0ZSBmb2FydGUgbcOibmRyxIMgZGUgdGluZSEgVmVpIHByaW1pIDEwMCBkZSBsZWkuIiB9DQoJCQkJCQkJCQkJCX0sDQoJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCSJ0ZXh0IjogIlRhY2kgZGluIGd1csSDIiwNCgkJCQkJCQkJCQkJCSJvdXRjb21lIjogeyAidGV4dCI6ICJOLWFtIG1haSB2xIN6dXQgYciZYSBwcm9zdCBjYSB0aW5lLiIgfQ0KCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJXQ0KCQkJCQkJCQkJfQ0KCQkJCQkJCQl9DQoJCQkJCQkJXQ0KCQkJCQkJfQ0KCQkJCQl9LA0KCQkJCQl7DQoJCQkJCQkidGV4dCI6ICJOdSB0ZSBwcmVnxIN0aSIsDQoJCQkJCQkib3V0Y29tZSI6IHsNCgkJCQkJCQkidGV4dCI6ICJOdSB0ZS1haSBwcmVnxIN0aXQgZGVsb2MuIEFjdW0gZXN0ZSBwcmVhIHTDonJ6aXUgc8SDIHRlIHLEg3pnw6JuZGXImXRpLi4uIiwNCgkJCQkJCQkib3B0aW9ucyI6IFsNCgkJCQkJCQkJew0KCQkJCQkJCQkJInRleHQiOiAiTWVyZ2kgbGEgyJljb2FsxIMiLA0KCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJInRleHQiOiAiQWkgZGF0IHRlc3R1bCDImWkgYWkgbHVhdCAyLiBUZSBzdW7EgyBtYW1hIMiZaSB0ZSDDrm50cmVhYsSDIGNlIGFpIGbEg2N1dCBsYSDImWNvYWzEgy4iLA0KCQkJCQkJCQkJCSJvcHRpb25zIjogew0KCQkJCQkJCQkJCX0NCgkJCQkJCQkJCX0NCgkJCQkJCQkJfQ0KCQkJCQkJCV0NCgkJCQkJCX0NCgkJCQkJfQ0KCQkJCV0NCgkJCX0NCgkJCQ0KCQkJdmFyIHAgPSBwcm9tcHRzOw0KCQkJDQoJCQlmdW5jdGlvbiBsb2FkKCkgew0KCQkJCXByb21wdC5pbm5lclRleHQgPSBwLnRleHQ7DQoJCQkJYnRuY29udC5pbm5lckhUTUwgPSAiIjsNCgkJCQlmb3IgKHZhciBpID0gMDsgaSA8IHAub3B0aW9ucy5sZW5ndGg7IGkrKykgew0KCQkJCQl2YXIgYnV0dG9uID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgiYnV0dG9uIik7DQoJCQkJCWJ1dHRvbi5pbm5lclRleHQgPSBwLm9wdGlvbnNbaV0udGV4dDsNCgkJCQkJZnVuY3Rpb24gcyhvKSB7DQoJCQkJCQlidXR0b24ub25jbGljayA9IGZ1bmN0aW9uKCkgew0KCQkJCQkJCXAgPSBwLm9wdGlvbnNbb10ub3V0Y29tZTsNCgkJCQkJCQlsb2FkKCk7DQoJCQkJCQl9DQoJCQkJCX0NCgkJCQkJcyhpKTsNCgkJCQkJYnRuY29udC5hcHBlbmRDaGlsZChidXR0b24pOw0KCQkJCX0NCgkJCX0NCgkJCQ0KCQkJbG9hZCgpOw0KCQl9KTsNCgkJPC9zY3JpcHQ+DQoJPC9oZWFkPg0KCTxib2R5Pg0KCQk8ZGl2IGlkPSJjb250YWluZXIiPg0KCQkJPGkgaWQ9InByb21wdCI+QWkgdGVzdCBsYSBpc3RvcmllLiDImGkgbmljaSBKYXZhU2NyaXB0IG51IGFpIGFjdGl2YXQuPC9pPg0KCQkJPGRpdiBpZD0iYnV0dG9uLWNvbnRhaW5lciI+PC9kaXY+DQoJCTwvZGl2Pg0KCTwvYm9keT4NCjwvaHRtbD4=';i.style.width='100%';i.style.border='none';i.style.height='95%';var a = Activity.create({'title':'Testul la Istorie','content':i});a.querySelector('.actionbar').remove();Activity.add(a);}"}
+				{"frn":{"en":"Reset Welcome Message","ro":"Reset. mesaj bun venit"},"desc":{"ro":"Îți permite să vezi din nou mesajul de bun venit.","en":"Allows you to view the first boot welcome message again."},"pkg":"com.asicosilomu.welreset","init":"return function(){var uql=System.Locale.CreateUserQL({'en':{'done':'Done!','m':'The welcome message will be shown on next boot.'},'ro':{'done':'Gata!','m':'Mesajul de bun venit va fi afișat la următoarea pornire.'}});localStorage.removeItem('welShown');alert(uql('done'),uql('m'))}","key":"WELRESET316357465"},
+				{"pkg":"com.asicosilomu.pkgexport","desc":{"en":"Simple app for getting the MagicStrings of installed user apps, which can be used to reinstall them later.","ro":"Aplicație simplă pentru a face rost de MagicString-urile aplicațiilor instalate ca utilizator, care pot fi utilizate pentru a le reinstala ulterior."},"frn":{"en":"Package Export","ro":"Export pachete"},"init":"return function(){\r\nvar locStrings = {\r\n\t\"en\": {\r\n\t\t\"appname\": \"Package Export\",\r\n\t\t\"export\": \"Export\",\r\n\t\t\"for\": \"for\"\r\n\t},\r\n\t\"ro\": {\r\n\t\t\"appname\": \"Export pachete\",\r\n\t\t\"export\": \"Exportare\",\r\n\t\t\"for\": \"pentru\"\r\n\t}\r\n};\r\nvar uql = System.Locale.CreateUserQL(locStrings);\r\nvar n = document.createElement(\"div\");\r\nvar l = JSON.parse(localStorage.getItem(\"UserPackages\"));\r\nvar p = Object.entries(l);\r\nfor (var i = 0; i < p.length; i++) {\r\nvar o = document.createElement(\"button\");\r\no.innerHTML = `<b>${System.Packages.User[p[i][0]].frn}</b>&nbsp;${p[i][0]}&nbsp;&nbsp;`;\r\no.className = \"listitem\";\r\nvar q = document.createElement(\"button\");\r\nfunction as(p) { q.onclick = function(){var z = document.createElement(\"textarea\");z.style.width=\"95%\";z.style.height=\"1000000px\";z.style.resize=\"none\";z.disabled=true;var y = structuredClone(p[1]);y.pkg=p[0];z.value=JSON.stringify(y);Activity.add(Activity.create({'title':`MagicString ${uql(\"for\")} ${p[0]}`,'content':z}))}};\r\nas(p[i]);\r\nq.innerText = uql(\"export\");\r\no.appendChild(q);\r\nn.appendChild(o);\r\n}\r\nActivity.add(Activity.create({\"title\": uql(\"appname\"), \"content\": n}));}\r\n","key":"PKGEXPORT122198635"},
+				{"pkg":"com.asicosilomu.istorie","desc":{"ro":"Un joc tip text-adventure în care dai un test la istorie."},"frn":"Testul la Istorie","init":"return function(){var i = document.createElement('iframe');i.src='data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+DQo8aHRtbD4NCgk8aGVhZD4NCgkJPHRpdGxlPlRlc3R1bCBsYSBJc3RvcmllIC0gVGV4dCBBZHZlbnR1cmU8L3RpdGxlPg0KCQk8c3R5bGUgdHlwZT0idGV4dC9jc3MiPg0KCQkJKiB7IGZvbnQtZmFtaWx5OiBzYW5zLXNlcmlmOyBmb250LXNpemU6IDEuMWVtOyB9DQoJCQkNCgkJCWJvZHkgew0KCQkJCWJhY2tncm91bmQtY29sb3I6IGJsYWNrOw0KCQkJCWRpc3BsYXk6IGZsZXg7DQoJCQkJYWxpZ24taXRlbXM6IGNlbnRlcjsNCgkJCQlqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsNCgkJCQl3aWR0aDogMTAwdnc7DQoJCQkJaGVpZ2h0OiAxMDB2aDsNCgkJCQltYXJnaW46IDBweDsNCgkJCQljb2xvcjogd2hpdGU7DQoJCQl9DQoJCQkNCgkJCSNjb250YWluZXIgew0KCQkJCWJhY2tncm91bmQtY29sb3I6IHdoaXRlOw0KCQkJCWNvbG9yOiBibGFjayAhaW1wb3J0YW50Ow0KCQkJCXBhZGRpbmc6IDE1cHg7DQoJCQl9DQoJCQkNCgkJCSNidXR0b24tY29udGFpbmVyIHsNCgkJCQlkaXNwbGF5OiBmbGV4Ow0KCQkJCW1hcmdpbi10b3A6IDE1cHg7DQoJCQkJYWxpZ24taXRlbXM6IGNlbnRlcjsNCgkJCQlqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsNCgkJCX0NCgkJCQ0KCQkJYnV0dG9uIHsNCgkJCQltYXJnaW46IDVweDsNCgkJCX0NCgkJPC9zdHlsZT4NCgkJPHNjcmlwdCB0eXBlPSJ0ZXh0L2phdmFzY3JpcHQiPg0KCQl3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigiRE9NQ29udGVudExvYWRlZCIsIChlKSA9PiB7DQoJCQ0KCQkJLy8gVGVzdCBJc3RvcmllIEhhaGENCgkJCXZhciBjb250YWluZXIgPSBkb2N1bWVudC5ib2R5LnF1ZXJ5U2VsZWN0b3IoIiNjb250YWluZXIiKTsNCgkJCXZhciBwcm9tcHQgPSBjb250YWluZXIucXVlcnlTZWxlY3RvcigiI3Byb21wdCIpOw0KCQkJdmFyIGJ0bmNvbnQgPSBjb250YWluZXIucXVlcnlTZWxlY3RvcigiI2J1dHRvbi1jb250YWluZXIiKTsNCgkJCQ0KCQkJLy8gUG92ZXN0ZQ0KCQkJdmFyIHByb21wdHMgPSB7DQoJCQkJInRleHQiOiAiU8SDcHTEg23Dom5hIHZpaXRvYXJlIHZlaSBkYSB1biB0ZXN0IGxhIElzdG9yaWUuIEN1bSB0ZSBwcmVnxIN0ZciZdGk/IiwNCgkJCQkib3B0aW9ucyI6IFsNCgkJCQkJew0KCQkJCQkJInRleHQiOiAiRsSDIGNvcGl1yJtlIiwNCgkJCQkJCSJvdXRjb21lIjogew0KCQkJCQkJCSJ0ZXh0IjogIkFpIGbEg2N1dCBjb3BpdcibZWxlIMiZaSBsZS1haSBixINnYXQgbGEgYm96b25hci4gQSB2ZW5pdCB0aW1wdWwgdGVzdHVsdWkhIiwNCgkJCQkJCQkib3B0aW9ucyI6IFsNCgkJCQkJCQkJew0KCQkJCQkJCQkJInRleHQiOiAiTWVyZ2kgbGEgyJljb2FsxIMiLA0KCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJInRleHQiOiAiQWkgZGF0IHRlc3R1bCBkb2FyIGPEgyBkb21udWwgZGUgSXN0b3JpZSB0ZS1hIHByaW5zIGN1IGNvcGl1yJtlbGUuIEFpIHByaW1pdCBub3RhIDEuIFRlIHN1bsSDIG1hbWEgyJlpIHRlIMOubnRyZWFixIMgY2UgYWkgZsSDY3V0IGxhIMiZY29hbMSDLiIsDQoJCQkJCQkJCQkJIm9wdGlvbnMiOiBbDQoJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCSJ0ZXh0IjogIlRhY2kgZGluIGd1csSDIiwNCgkJCQkJCQkJCQkJCSJvdXRjb21lIjogew0KCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIkFpIHTEg2N1dCBkaW4gZ3VyxIMgaWFyIG1hbWEgbnUgYSBhZmxhdC4gQWkgc2PEg3BhdCEiLA0KCQkJCQkJCQkJCQkJCSJvcHRpb25zIjogW10NCgkJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQkJfSwNCgkJCQkJCQkJCQkJew0KCQkJCQkJCQkJCQkJInRleHQiOiAiU3B1bmUtaSBkZSB0ZXN0IiwNCgkJCQkJCQkJCQkJCSJvdXRjb21lIjogew0KCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIk1hbWEgdGUgw65udHJlYWLEgyBjZSBub3TEgyBhaSBsdWF0LiIsDQoJCQkJCQkJCQkJCQkJIm9wdGlvbnMiOiBbDQoJCQkJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIlNwdW5lLWkgY8SDIG51IHMtYXUgZGF0IMOubmPEgyByZXp1bHRhdGVsZSIsDQoJCQkJCQkJCQkJCQkJCQkib3V0Y29tZSI6IHsNCgkJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJNYW1hIGEgdWl0YXQgZXZlbnR1YWwgZGUgdGVzdCBpYXIgbm90YSB0YSBudSBhIGZvc3QgYWZsYXTEgy4gQnJhdm8hIg0KCQkJCQkJCQkJCQkJCQkJfQ0KCQkJCQkJCQkJCQkJCQl9LA0KCQkJCQkJCQkJCQkJCQl7DQoJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJTcHVuZS1pIGFkZXbEg3J1bCIsDQoJCQkJCQkJCQkJCQkJCQkib3V0Y29tZSI6IHsNCgkJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJNYW1hIHMtYSBzdXDEg3JhdCBmb2FydGUgdGFyZSDImWkgYSBhcnVuY2F0IGN1IG1hc2EgZGluIGJ1Y8SDdMSDcmllLiBQZXJlyJtpaSBzZW5zaWJpbGkgYWkgY2FzZWkgbnUgYXUgc3Vwb3J0YXQgZm9yyJthIGlhciB0b2F0xIMgY2FzYSBzLWEgZsSDY3V0IGJ1Y8SDyJtlbGUuIFRvyJtpIGHIm2kgcsSDbWFzIHBlIHN0csSDemkuIg0KCQkJCQkJCQkJCQkJCQkJfQ0KCQkJCQkJCQkJCQkJCQl9LA0KCQkJCQkJCQkJCQkJCQl7DQoJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJTcHVuZS1pIGPEgyBhaSBsdWF0IDEwIiwNCgkJCQkJCQkJCQkJCQkJCSJvdXRjb21lIjogew0KCQkJCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIk1hbWEgdGUgZmVsaWNpdMSDLCBkYXIgdG90dciZaSBudSB0ZSBjcmVkZS4gRWEgZXN0ZSBwZSBjYWxlIHPEgyDDrmwgdGVsZWZvbmV6ZSBwZSBkb21udWwgZGUgSXN0b3JpZSBwZW50cnUgYSBjb25maXJtYS4iLA0KCQkJCQkJCQkJCQkJCQkJCSJvcHRpb25zIjogWw0KCQkJCQkJCQkJCQkJCQkJCQl7DQoJCQkJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJMYXMtbyBzxIMgw65sIHRlbGVmb25lemUiLA0KCQkJCQkJCQkJCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJCQkJCQkJCQkJInRleHQiOiAiTWFtYSBsLWEgdGVsZWZvbmF0IHBlIGRvbW51bCBkZSBJc3RvcmllIGlhciBhY2VzdGEgaS1hIHNwdXMgYWRldsSDcnVsLiBWYSB0cmVidWkgc8SDIGZvbG9zZciZdGkgR05PTUUgcGVudHJ1IG8gbHVuxIMuIg0KCQkJCQkJCQkJCQkJCQkJCQkJfQ0KCQkJCQkJCQkJCQkJCQkJCQl9LA0KCQkJCQkJCQkJCQkJCQkJCQl7DQoJCQkJCQkJCQkJCQkJCQkJCQkidGV4dCI6ICJTcHVuZS1pIHPEgyBhyJl0ZXB0ZSBwdcibaW4iLA0KCQkJCQkJCQkJCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJCQkJCQkJCQkJInRleHQiOiAiTWFtYSBhyJl0ZWFwdMSDLiBDZSBmYWNpPyIsDQoJCQkJCQkJCQkJCQkJCQkJCQkJIm9wdGlvbnMiOiBbDQoJCQkJCQkJCQkJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCQkJCQkJCQkJCSJ0ZXh0IjogIlNwdW5lLWkgYWRldsSDcnVsIiwNCgkJCQkJCQkJCQkJCQkJCQkJCQkJCSJvdXRjb21lIjogeyAidGV4dCI6ICJNYWkgYmluZSDDrmkgc3B1bmVhaSBkZSBsYSDDrm5jZXB1dC4gyJh0aWkgY2Ugc2Ugw65udMOibXBsxIMgYWN1bS4iIH0NCgkJCQkJCQkJCQkJCQkJCQkJCQkJfSwNCgkJCQkJCQkJCQkJCQkJCQkJCQkJew0KCQkJCQkJCQkJCQkJCQkJCQkJCQkJInRleHQiOiAiRMSDLWkgyJlwYWfEgyBsdWkgZG9tbnVsIGRlIElzdG9yaWUgc8SDIMOuaSBzcHVuxIMgY8SDIGFpIGx1YXQgMTAiLA0KCQkJCQkJCQkJCQkJCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJCQkJCQkJCQkJCQkJInRleHQiOiAiyJppLWFpIGdvbGl0IHB1yJljdWxpyJthIMiZaSBpLWFpIGRhdCBkb21udWx1aSBkZSBJc3RvcmllIDEwMCBkZSBsZWkgyJlwYWfEgy4gQWkgc2PEg3BhdCEiDQoJCQkJCQkJCQkJCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQkJCQkJCQkJCQldDQoJCQkJCQkJCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQkJCQkJCQldDQoJCQkJCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQkJCQldDQoJCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJCX0NCgkJCQkJCQkJCQldDQoJCQkJCQkJCQl9DQoJCQkJCQkJCX0NCgkJCQkJCQldDQoJCQkJCQl9DQoJCQkJCX0sDQoJCQkJCXsNCgkJCQkJCSJ0ZXh0IjogIsOObnZhyJvEgyIsDQoJCQkJCQkib3V0Y29tZSI6IHsNCgkJCQkJCQkidGV4dCI6ICJBaSBzdGF0IG8gemkgw65udHJlYWfEgyBzxIMgdG9jZciZdGkgY2VsZSA2IHBhZ2luaSBkZSBpbmZvcm1hyJtpaSBpbnV0aWxlLiBFyJl0aSBwcmVnxIN0aXQuIiwNCgkJCQkJCQkib3B0aW9ucyI6IFsNCgkJCQkJCQkJew0KCQkJCQkJCQkJInRleHQiOiAiTWVyZ2kgbGEgyJljb2FsxIMiLA0KCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJInRleHQiOiAiQWkgZGF0IHRlc3R1bCDImWkgYWkgbHVhdCBub3RhIDEwLiBDZSBmYWNpPyIsDQoJCQkJCQkJCQkJIm9wdGlvbnMiOiBbDQoJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCSJ0ZXh0IjogIlNwdW5lLWkgbWFtZWkiLA0KCQkJCQkJCQkJCQkJIm91dGNvbWUiOiB7ICJ0ZXh0IjogIk1hbWEgZXN0ZSBmb2FydGUgbcOibmRyxIMgZGUgdGluZSEgVmVpIHByaW1pIDEwMCBkZSBsZWkuIiB9DQoJCQkJCQkJCQkJCX0sDQoJCQkJCQkJCQkJCXsNCgkJCQkJCQkJCQkJCSJ0ZXh0IjogIlRhY2kgZGluIGd1csSDIiwNCgkJCQkJCQkJCQkJCSJvdXRjb21lIjogeyAidGV4dCI6ICJOLWFtIG1haSB2xIN6dXQgYciZYSBwcm9zdCBjYSB0aW5lLiIgfQ0KCQkJCQkJCQkJCQl9DQoJCQkJCQkJCQkJXQ0KCQkJCQkJCQkJfQ0KCQkJCQkJCQl9DQoJCQkJCQkJXQ0KCQkJCQkJfQ0KCQkJCQl9LA0KCQkJCQl7DQoJCQkJCQkidGV4dCI6ICJOdSB0ZSBwcmVnxIN0aSIsDQoJCQkJCQkib3V0Y29tZSI6IHsNCgkJCQkJCQkidGV4dCI6ICJOdSB0ZS1haSBwcmVnxIN0aXQgZGVsb2MuIEFjdW0gZXN0ZSBwcmVhIHTDonJ6aXUgc8SDIHRlIHLEg3pnw6JuZGXImXRpLi4uIiwNCgkJCQkJCQkib3B0aW9ucyI6IFsNCgkJCQkJCQkJew0KCQkJCQkJCQkJInRleHQiOiAiTWVyZ2kgbGEgyJljb2FsxIMiLA0KCQkJCQkJCQkJIm91dGNvbWUiOiB7DQoJCQkJCQkJCQkJInRleHQiOiAiQWkgZGF0IHRlc3R1bCDImWkgYWkgbHVhdCAyLiBUZSBzdW7EgyBtYW1hIMiZaSB0ZSDDrm50cmVhYsSDIGNlIGFpIGbEg2N1dCBsYSDImWNvYWzEgy4iLA0KCQkJCQkJCQkJCSJvcHRpb25zIjogew0KCQkJCQkJCQkJCX0NCgkJCQkJCQkJCX0NCgkJCQkJCQkJfQ0KCQkJCQkJCV0NCgkJCQkJCX0NCgkJCQkJfQ0KCQkJCV0NCgkJCX0NCgkJCQ0KCQkJdmFyIHAgPSBwcm9tcHRzOw0KCQkJDQoJCQlmdW5jdGlvbiBsb2FkKCkgew0KCQkJCXByb21wdC5pbm5lclRleHQgPSBwLnRleHQ7DQoJCQkJYnRuY29udC5pbm5lckhUTUwgPSAiIjsNCgkJCQlmb3IgKHZhciBpID0gMDsgaSA8IHAub3B0aW9ucy5sZW5ndGg7IGkrKykgew0KCQkJCQl2YXIgYnV0dG9uID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgiYnV0dG9uIik7DQoJCQkJCWJ1dHRvbi5pbm5lclRleHQgPSBwLm9wdGlvbnNbaV0udGV4dDsNCgkJCQkJZnVuY3Rpb24gcyhvKSB7DQoJCQkJCQlidXR0b24ub25jbGljayA9IGZ1bmN0aW9uKCkgew0KCQkJCQkJCXAgPSBwLm9wdGlvbnNbb10ub3V0Y29tZTsNCgkJCQkJCQlsb2FkKCk7DQoJCQkJCQl9DQoJCQkJCX0NCgkJCQkJcyhpKTsNCgkJCQkJYnRuY29udC5hcHBlbmRDaGlsZChidXR0b24pOw0KCQkJCX0NCgkJCX0NCgkJCQ0KCQkJbG9hZCgpOw0KCQl9KTsNCgkJPC9zY3JpcHQ+DQoJPC9oZWFkPg0KCTxib2R5Pg0KCQk8ZGl2IGlkPSJjb250YWluZXIiPg0KCQkJPGkgaWQ9InByb21wdCI+QWkgdGVzdCBsYSBpc3RvcmllLiDImGkgbmljaSBKYXZhU2NyaXB0IG51IGFpIGFjdGl2YXQuPC9pPg0KCQkJPGRpdiBpZD0iYnV0dG9uLWNvbnRhaW5lciI+PC9kaXY+DQoJCTwvZGl2Pg0KCTwvYm9keT4NCjwvaHRtbD4=';i.style.width='100%';i.style.border='none';i.style.height='95%';var a = Activity.create({'title':'Testul la Istorie','content':i});a.querySelector('.actionbar').remove();Activity.add(a);}","key":"JTAISTORIE220633637"}
 			];
 			for (var i = 0; i < appList.length; i++) {
 				var b = document.createElement("button");
-				b.innerHTML = `<b>${appList[i].frn}</b>&nbsp;${appList[i].pkg}&nbsp;&nbsp;<button>${ql("app_install")}</button>`;
+				frn = undefined;
+				if (typeof appList[i].frn == "object"){ var frn = appList[i].frn[System.Locale.Current];
+				if (frn == undefined) frn = appList[i].frn.en;
+				}
+				var iou = ql("app_install");
+				if (System.Packages.User[appList[i].pkg] != undefined) iou = ql("app_update");
+				b.innerHTML = `<b>${frn || appList[i].frn || appList[i].pkg}</b>&nbsp;${appList[i].pkg}&nbsp;&nbsp;<button>${iou}</button>`;
 				var d = b.querySelector("button");
 				b.className = "listitem";
+				b.style.borderBottom = "none";
+				var desc = document.createElement("i");
+				desc.innerText = appList[i].desc[System.Locale.Current] || appList[i].desc.en || "No description provided.";
+				desc.style.borderTop = "none";
+				desc.className = "listitem";
+				desc.style.width = "calc(100% - 42px)";
+				desc.style.height = "auto";
+				desc.style.paddingTop = "0px";
+				desc.style.paddingBottom = "15px";
+				desc.style.paddingRight = "20px";
+				delete appList[i].desc;
 				function bind(ms) {
 					d.onclick = function(){System.Packages.addUserPackage(ms);};
 				};
 				bind(JSON.stringify(appList[i]));
 				c.appendChild(b);
+				c.appendChild(desc);
 			}
 			Activity.add(Activity.create({"title": ql("app_com.asicosilomu.apps"), "content": c}));
 		}
@@ -600,6 +634,12 @@ co = {
 			Activity.add(a);
 			openFullscreen(document.documentElement);
 			setTimeout(Activity.previous, 250);
+		}
+	},
+	"com.asicosilomu.promotion.github": {
+		"frn": "GitHub",
+		"init": function () {
+			window.open("https://github.com/asicosilomu/asicosilomu-mobile");
 		}
 	}
 }
@@ -615,6 +655,10 @@ System.Packages.loadUserPackages = function() {
 	var ent = Object.entries(userpkg);
 	for (var i = 0; i < ent.length; i++) {
 		try {
+			//if (userpkg[ent[i][0]].frn.substr(0,1) == "{" && userpkg[ent[i][0]].frn.substr(userpkg[ent[i][0].frn.length - 1, 1]) == "}") userpkg[ent[i][0]].frn = JSON.parse(userpkg[ent[i][0]].frn);
+			if (typeof userpkg[ent[i][0]].frn == "object") {
+				userpkg[ent[i][0]].frn = userpkg[ent[i][0]].frn[System.Locale.Current] || userpkg[ent[i][0]].frn.en || userpkg[ent[i][0]].pkg;
+			}
 			userpkg[ent[i][0]].init = new Function(userpkg[ent[i][0]].init)();
 		} catch (e) { setTimeout(function(){System.LaunchPackage("com.asicosilomu.systemui.plugin.dialogs", "Core", {"title": e.name, "text": e.message})},1); };
 	};
@@ -628,10 +672,11 @@ System.Packages.addUserPackage = function(ms) {
 	try {
 		var thing = JSON.parse(ms);
 		var pkg = thing.pkg;
-		if (pkg == undefined || thing.frn == undefined || thing.init == undefined) throw new Error("Invalid MagicString!");
+		if (pkg == undefined || thing.frn == undefined || thing.init == undefined) throw new Error(ql("pkg_error_parse"));
 		delete thing.pkg;
 		var ua = JSON.parse(localStorage.getItem("UserPackages"));
-		if (ua[pkg] != undefined || System.Packages.Core[pkg] != undefined) throw new Error("Package already exists!");
+		if (System.Packages.Core[pkg] != undefined) throw new Error(ql("pkg_error_sys"));
+		if (ua[pkg] != undefined && thing.key != ua[pkg].key) throw new Error(ql("pkg_error_key"));
 		ua[pkg] = thing;
 		localStorage.setItem("UserPackages", JSON.stringify(ua));
 		Activity.previous = function(){window.location.reload()}; Activity.jumpTo = Activity.previous; alert(ql("app_com.asicosilomu.hackysideload"), ql("locale_change_dlg"));
@@ -668,7 +713,17 @@ System.LaunchPackage("com.asicosilomu.mobilehome", "Core");
 
 // Welcome Message
 if (localStorage.getItem("welShown") == null) {
-	alert("Welcome!", "Asicosilomu Mobile is an Android-inspired web-based operating system. Updates are released frequently, and there's many more cool things on the horizon! Feel free to click around and explore.");
+	var wql = System.Locale.CreateUserQL({
+		"en": {
+			"wel": "Welcome!",
+			"m": "Asicosilomu Mobile is an Android-inspired web-based operating system. Updates are released frequently, and there's many more cool things on the horizon! Feel free to click around and explore."
+		},
+		"ro": {
+			"wel": "Bun venit!",
+			"m": "Asicosilomu Mobile este un sistem de operare web-based inspirat de Android. Acesta este actualizat frecvent, și sunt mult mai multe lucruri tari în plan! Acum te voi lăsa să explorezi, simte-te ca acasă."
+		}
+	});
+	alert(wql("wel"), wql("m"));
 	localStorage.setItem("welShown", true);
 }
 
