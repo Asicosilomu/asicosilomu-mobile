@@ -5,16 +5,79 @@ window.Activity = {};
 
 // System Information
 System.ProductName = "Asicosilomu Mobile";
-System.ProductVersion = "1.3";
-System.ProductCodename = "Cavicorn";
+System.ProductVersion = "1.4";
+System.ProductCodename = "Caring Cavicorn";
 
 window.addEventListener("DOMContentLoaded", (e) => {
+
+// Logging
+var log = [];
+System.Log = log;
+
+console.log = function(v) {
+	var entry = {};
+	entry.type = "log";
+	entry.data = v;
+	log.push(entry);
+}
+
+console.info = function(v) {
+	var entry = {};
+	entry.type = "info";
+	entry.data = v;
+	log.push(entry);
+}
+
+console.warn = function(v) {
+	var entry = {};
+	entry.type = "warn";
+	entry.data = v;
+	log.push(entry);
+}
+
+console.error = function(v) {
+	var entry = {};
+	entry.type = "error";
+	entry.data = v;
+	log.push(entry);
+}
+
+console.debug = function(v) {
+	var entry = {};
+	entry.type = "debug";
+	entry.data = v;
+	log.push(entry);
+}
+
+console.exception = function(v) {
+	var entry = {};
+	entry.type = "exception";
+	entry.data = v;
+	log.push(entry);
+}
+
+console.table = function(v) {
+	var entry = {};
+	entry.type = "table";
+	entry.data = v;
+	log.push(entry);
+}
+
+console.trace = function(v) {
+	var entry = {};
+	entry.type = "trace";
+	entry.data = v;
+	log.push(entry);
+}
 
 // Activity management
 var main = document.body.querySelector("#view-main");
 
 // Keep track of the Activity tree
 Activity.treeIndex = 0;
+
+// Recent Apps Stack
+Activity.Recent = [];
 
 // Create a fresh, empty Activity
 Activity.create = function(args) {
@@ -47,9 +110,11 @@ Activity.jumpTo = function(i) {
 		var c = main.querySelectorAll(".activity");
 		for (var j = 0; j < c.length; j++) {
 			if (Number(c[j].id.split("activity")[1]) > i) {
+				if (Activity.Recent.indexOf(c[j]) == -1 && c[j].dataset.archivable != "false") Activity.Recent.push(c[j]);
 				c[j].remove();
 			}
 		}
+		if (Activity.Recent.indexOf(t) != -1) { console.warn("Splicing " + Activity.Recent.indexOf(t).toString()); Activity.Recent.splice(Activity.Recent.indexOf(t), 1); }
 		t.style.display = "block";
 		if (!t.querySelector(".actionbar")) {
 			main.className = "noactionbar";
@@ -58,15 +123,17 @@ Activity.jumpTo = function(i) {
 			main.className = "";
 		}
 		Activity.treeIndex = i + 1;
-	} else { throw new Error("Activity not found."); }
+	} else { console.warn("Activity id " + i.toString() + " was not found. User was directed to next available activity."); Activity.treeIndex--; Activity.previous(); }
 }
 
 // Add an Activity to the tree
 Activity.add = function(act) {
+	if (Activity.Recent.indexOf(main.lastElementChild) == -1 && Activity.treeIndex > 0 && main.lastElementChild.dataset.archivable != "false") Activity.Recent.push(main.lastElementChild);
 	act.id = "activity" + Activity.treeIndex.toString();
 	Activity.treeIndex++;
 	Activity.hideAll();
 	main.appendChild(act);
+	//if (Activity.Recent.indexOf(act) == -1 && act.dataset.archivable != "false") Activity.Recent.push(act);
 	if (!act.querySelector(".actionbar")) {
 		main.className = "noactionbar";
 		act.querySelector(".activity-content").classList.add("noactionbar");
@@ -82,7 +149,37 @@ Activity.previous = function() {
 	}
 }
 
+// Kill an Activity
+Activity.kill = function(a) {
+	if (Activity.Recent.indexOf(a) != -1) { console.warn("Splicing " + Activity.Recent.indexOf(a).toString()); Activity.Recent.splice(Activity.Recent.indexOf(a), 1); }
+}
+
 System.Storage = {};
+
+// Filesystem
+System.Storage.Shared = {};
+
+// Init
+if (localStorage.getItem("/storage/shared") == null) localStorage.setItem("/storage/shared", JSON.stringify({}));
+
+System.Storage.Shared.SendIO = function(path, val, del) {
+	var d = JSON.parse(localStorage.getItem("/storage/shared"));
+	var p = path.split("/");
+	var cur = d;
+	for (var i = 0; i < p.length; i++) {
+		if (p[i].trim()[0] == "$") { console.error("Illegal filename."); throw new Error("Illegal filename."); };
+		if (p[i].trim() != "") { var oc = cur; cur = cur[p[i]]; }
+		if (cur == undefined && !val) {
+			console.error("File not found: " + path);
+			throw new Error("File not found: " + path);
+		} else if (cur == undefined && val) {
+			oc[p[i]] = {}; cur = oc[p[i]];
+		}
+	}
+	if (del) { cur["$gone"] = true; } else {
+	if (val) { cur["$data"] = val; cur["$gone"] = false; } else { return cur; }; };
+	localStorage.setItem("/storage/shared", JSON.stringify(d));
+};
 
 // Private App Storage
 System.Storage.AppPrivate = {};
@@ -169,7 +266,19 @@ System.Locale.Strings = {
 		"app_update": "Update",
 		"pkg_error_sys": "This package conflicts with an existing system package by the same name.",
 		"pkg_error_key": "This package cannot be updated due to a key mismatch.",
-		"pkg_error_parse": "There was a problem parsing the package."
+		"pkg_error_parse": "There was a problem parsing the package.",
+		"apps_overview": "Recent apps",
+		"apps_untitled": "Untitled",
+		"settings_dev": "Developer options",
+		"settings_dev_log": "System log",
+		"fullon_4": "Asicosilomu Mobile is now fullscreen.",
+		"app_com.asicosilomu.files": "Files",
+		"settings_reset": "Reset",
+		"settings_reset_all": "Reset everything",
+		"settings_reset_warn_all": "Are you sure about that? All of your data will be deleted!",
+		"yes": "Yes",
+		"no": "No",
+		"reset_done": "All data has been erased."
 	},
 	"ro": {
 		"app_com.asicosilomu.notes": "Notițe",
@@ -203,7 +312,19 @@ System.Locale.Strings = {
 		"app_update": "Actualizare",
 		"pkg_error_sys": "Acest pachet este în conflict cu un pachet de sistem existent cu același nume.",
 		"pkg_error_key": "Acest pachet nu poate fi actualizat deoarece cheile de securitate nu se potrivesc.",
-		"pkg_error_parse": "A apărut o problemă la procesarea pachetului."
+		"pkg_error_parse": "A apărut o problemă la procesarea pachetului.",
+		"apps_overview": "Aplicații recente",
+		"apps_untitled": "Fără titlu",
+		"settings_dev": "Opțiuni pentru dezvoltatori",
+		"settings_dev_log": "Jurnal sistem",
+		"fullon_4": "Asicosilomu Mobile se afișează pe ecran complet.",
+		"app_com.asicosilomu.files": "Fișiere",
+		"settings_reset": "Resetare",
+		"settings_reset_all": "Resetați tot",
+		"settings_reset_warn_all": "Sunteți sigur de asta? Toate datele dvs. vor fi șterse!",
+		"yes": "Da",
+		"no": "Nu",
+		"reset_done": "Toate datele au fost șterse."
 	}
 };
 System.LaunchPackage("com.asicosilomu.providers.settings", "Core", {"Name": "UserLocale", "RequestType": "GET"}).then(function(e){System.Locale.Current = e; System.Locale.Strings.Current = System.Locale.Strings[System.Locale.Current];
@@ -255,7 +376,11 @@ co = {
 			loadApps("User");
 			var launcher = Activity.create({"title": "Launcher", "content": d});
 			launcher.querySelector(".activity-content").classList.add("cutekitten");
+			// Remove actionbar
 			launcher.querySelector(".actionbar").remove();
+			
+			// Hide from recents
+			launcher.dataset.archivable = false;
 			Activity.add(launcher);
 		}
 	},
@@ -293,6 +418,10 @@ co = {
 			var p = loadNotes(data.notes);
 			c.appendChild(p);
 			var a = Activity.create({"title": ql("app_com.asicosilomu.notes"), "content": c});
+
+			// Hide from recents
+			// I'm too lazy to make it work properly
+			a.dataset.archivable = false;
 			Activity.add(a);
 		}
 	},
@@ -379,6 +508,9 @@ co = {
 			kp.appendChild(keyboard);
 			c.appendChild(kp);
 			var act = Activity.create({"title": ql("ime_title"), "content": c});
+
+			// Hide from Recents (makes sense this time)
+			act.dataset.archivable = false;
 			Activity.add(act);
 			prom.then(function(v){Activity.previous();ActivityResultPromise(v);});
 		}
@@ -505,6 +637,75 @@ co = {
 						}
 						Activity.add(Activity.create({"title": ql("settings_language"), "content": m}));
 					}
+				},
+				{
+					"frn": ql("settings_reset"),
+					"init": function () {
+						var g = document.createElement("div");
+						var all = document.createElement("button");
+						all.className = "listitem";
+						all.innerText = ql("settings_reset_all");
+						all.onclick = function() {
+							var y = document.createElement("div");
+							y.innerHTML = `<h1 style='background-color: white; color: red; font-weight: bold;'>${ql("settings_reset_warn_all")}</h1><button style='font-size: 100px; height: auto' class='listitem' id='n'>${ql("no")}</button><button style='font-size: 12px; height: auto;' id='y' class='listitem'>${ql("yes")}</button>`;
+							y.querySelector("#n").onclick = Activity.previous;
+							y.querySelector("#y").onclick = function() {
+								localStorage.clear();
+								alert(ql("settings_reset_all"), ql("reset_done"));
+								Activity.jumpTo = function(){window.location.reload()};
+								Activity.add = function(){window.location.reload()};
+							}
+							for (var i = 0; i < 10; i++){
+								var x = y.querySelector("#n").cloneNode();
+								x.innerText = ql("no");
+								x.onclick = Activity.previous;
+								y.insertBefore(x, y.querySelector("#y"));
+							}
+							for (var i = 0; i < 10; i++){
+								var x = y.querySelector("#n").cloneNode();
+								x.innerText = ql("no");
+								x.onclick = Activity.previous;
+								y.querySelector("#y").after(x);
+							}
+							Activity.add(Activity.create({"title": ql("settings_reset_all"), "content": y}));
+						}
+						g.appendChild(all);
+						Activity.add(Activity.create({"title": ql("settings_reset"), "content": g}));
+					}
+				},
+				{
+					"frn": ql("settings_dev"),
+					"init": function () {
+						var m = document.createElement("div");
+						var opt = [
+							{
+								"frn": ql("settings_dev_log"),
+								"init": function() {
+									var n = document.createElement("div");
+									for (var i = 0; i < System.Log.length; i++) {
+										var g = document.createElement("button");
+										g.className = "listitem";
+										var ent = System.Log[i];
+										g.innerText = ent.type + ": " + ent.data.toString();
+										n.appendChild(g);
+									};
+									var dss = Activity.create({"title": ql("settings_dev_log"), "content": n});
+									// I'm too lazy to explain why I'm doing this
+									dss.dataset.archivable = false;
+									Activity.add(dss);
+								}
+							}
+						];
+						for (var i = 0; i < opt.length; i++) {
+							var bu = document.createElement("button");
+							bu.innerText = opt[i].frn;
+							bu.onclick = opt[i].init;
+							bu.className = "listitem";
+							m.appendChild(bu);
+						}
+						var act = Activity.create({"title": ql("settings_dev"), "content": m});
+						Activity.add(act);
+					}
 				}
 			];
 			var c = document.createElement("div");
@@ -561,6 +762,9 @@ co = {
 			ac.style.display = "flex";
 			ac.style.alignItems = "center";
 			ac.style.justifyContent = "center";
+
+			// Dialogs should not persist
+			a.dataset.archivable = false;
 			Activity.add(a);
 		}
 	},
@@ -630,10 +834,77 @@ co = {
 		"frn": ql("app_com.asicosilomu.fullscreen.toggle"),
 		"init": function () {
 			function openFullscreen(elem){if(elem.requestFullscreen){elem.requestFullscreen()}else if(elem.webkitRequestFullscreen){elem.webkitRequestFullscreen()}else if(elem.msRequestFullscreen){elem.msRequestFullscreen()}};
-			var a = Activity.create({"title": ql("app_com.asicosilomu.fullscreen.toggle"), "content": document.createElement("div")});
-			Activity.add(a);
+			//var a = Activity.create({"title": ql("app_com.asicosilomu.fullscreen.toggle"), "content": document.createElement("div")});
+			//Activity.add(a);
 			openFullscreen(document.documentElement);
-			setTimeout(Activity.previous, 250);
+			alert(ql("app_com.asicosilomu.fullscreen.toggle"), ql("fullon_4"));
+			//setTimeout(Activity.previous, 250);
+		}
+	},
+	"com.asicosilomu.files": {
+		"frn": ql("app_com.asicosilomu.files"),
+		"init": function (args) {
+			if (args.path == undefined) args.path = "/";
+			var c = document.createElement("div");
+			var list = System.Storage.Shared.SendIO(args.path);
+			var e = Object.entries(list);
+			// newbtn
+			var ne = document.createElement("button");
+			ne.innerText = "N";
+			ne.onclick = function() {
+				System.LaunchPackage("com.asicosilomu.ime", "Core", {}).then(function(d){System.Storage.Shared.SendIO(args.path + d, "Empty");Activity.previous();System.LaunchPackage("com.asicosilomu.files", "Core", args);});
+			}
+			c.appendChild(ne);
+			// editbtn
+			var ed = document.createElement("button");
+			ed.innerText = "E";
+			ed.onclick = function() {
+				System.LaunchPackage("com.asicosilomu.ime", "Core", {"text": System.Storage.Shared.SendIO(args.path)["$data"]}).then(function(d){System.Storage.Shared.SendIO(args.path, d);Activity.previous();System.LaunchPackage("com.asicosilomu.files", "Core", args);});
+			};
+			c.appendChild(ed);
+			var z = document.createElement("pre");
+			z.style.margin = "0px";
+			z.style.padding = "0px";
+			z.style.border = "1px solid black";
+			z.style.width = "calc(100% - 2px)";
+			z.style.height = "auto";
+			z.style.backgroundColor = "white";
+			z.innerText = list["$data"];
+			c.appendChild(z);
+			for (var i = 0; i < e.length; i++) {
+				if (e[i][0][0] != "$" && e[i][1]["$gone"] != true) {
+					var g = document.createElement("button");
+					g.style.padding = "0px";
+					g.className = "listitem";
+					g.style.border = "none";
+					var b = document.createElement("button");
+					b.style.width = "90%";
+					b.style.height = "100%";
+					b.innerText = e[i][0];
+					function s(p) {
+						b.onclick = function(){System.LaunchPackage("com.asicosilomu.files", "Core", {"path": p, "hidebeta": true})};
+					};
+					s(args.path + e[i][0] + "/");
+					var dl = document.createElement("button");
+					dl.innerText = "X";
+					dl.style.width = "10%";
+					dl.style.height = "100%";
+					function ds(p) {
+						dl.onclick = function() {
+							System.Storage.Shared.SendIO(p, "", true); Activity.previous(); System.LaunchPackage("com.asicosilomu.files", "Core", args);
+						}
+					}
+					ds(args.path + e[i][0] + "/");
+					g.appendChild(b);
+					g.appendChild(dl);
+					c.appendChild(g);
+				}
+			}
+			var a = Activity.create({"title": ql("app_com.asicosilomu.files") + ": " + args.path, "content": c});
+			a.dataset.archivable = false;
+			Activity.add(a);
+			if (!args.hidebeta) { alert("Achtung!", "Files is still in beta."); };
+			args.hidebeta = true;
 		}
 	},
 	"com.asicosilomu.promotion.github": {
@@ -700,6 +971,59 @@ navbutton_back.onclick = function(){ Activity.previous(); };
 
 var navbutton_home = document.body.querySelector("#navbutton-home");
 navbutton_home.onclick = function() { Activity.jumpTo(0); };
+
+// Recent Apps View
+var navbutton_overview = document.body.querySelector("#navbutton-overview");
+navbutton_overview.onclick = function() {
+	var c = document.createElement("div");
+	for (var i = 0; i < Activity.Recent.length; i++) {
+		var b = document.createElement("button");
+		b.style.width = "90%";
+		b.style.height = "100%";
+		var a = Activity.Recent[i].querySelector(".actionbar");
+		var p = document.createElement("button");
+		p.className = "listitem";
+		p.style.padding = "0px";
+		p.style.border = "none";
+		p.appendChild(b);
+		if (a) { b.innerText = a.innerText; } else { b.innerText = ql("apps_untitled"); };
+		q = document.createElement("button");
+		q.style.width = "10%";
+		q.innerText = "X";
+		q.style.height = "100%";
+		//b.innerHTML += "";
+		p.appendChild(q);
+		function s(m) {
+			b.onclick = function() {
+				Activity.previous();
+				console.info("Deciding for " + m.id);
+				//console.warn(main.querySelector("#"+m.id));
+				//if (main.querySelector("#"+m.id) != m) {
+				if (true) {
+					console.warn("Opening from Recents", m);
+					m.remove();
+					m.style.display = "block";
+					Activity.add(m);
+					console.warn("Splicing " + Activity.Recent.indexOf(m).toString()); Activity.Recent.splice(Activity.Recent.indexOf(m), 1);
+				} else {
+					console.warn("Opening from stack", m);
+					Activity.jumpTo(Number(m.id.split("activity")[1]));
+				}
+			}
+			q.onclick = function() {
+				if(Activity.Recent.indexOf(m) != -1) Activity.Recent.splice(Activity.Recent.indexOf(m), 1);
+				m.remove();
+				Activity.previous();
+				document.body.querySelector("#navbutton-overview").click();
+			}
+		}
+		s(Activity.Recent[i]);
+		c.appendChild(p);
+	}
+	var act = Activity.create({"title": ql("apps_overview"), content: c});
+	act.dataset.archivable = false;
+	Activity.add(act);
+};
 
 // Dialog Boxes
 window.alert = function (title, text) {
