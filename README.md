@@ -5,6 +5,7 @@ Features:
 * Multiple language support (English, Romanian)
 * Third-party (user) app support, from Asicosilomu Apps or by sideloading via MagicString using App Installer
 * Simple yet powerful API
+* Private and shared storage
 * Modular structure
 * Versatile activity pager
 * Built on recent web technologies
