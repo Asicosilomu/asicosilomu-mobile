@@ -6,6 +6,7 @@ Features:
 * Third-party (user) app support, from Asicosilomu Apps or by sideloading via MagicString using App Installer
 * Simple yet powerful API
 * Modular structure
+* Versatile activity pager
 * Built on recent web technologies
 
 Apps:
@@ -16,6 +17,7 @@ Apps:
 * App Installer
 * Asicosilomu Apps
 * Fullscreen
+* Files
 * GitHub (links to here)
 
 Apps on Asicosilomu Apps:
